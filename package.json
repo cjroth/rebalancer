@@ -1,6 +1,6 @@
 {
   "name": "@cjroth/rebalancer",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "bin": {
     "rebalancer": "./dist/cli.js"
@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "ink": "^6.8.0",
-    "ink-web": "^0.1.13",
+    "ink-web": "^0.1.14",
     "zod": "^4.3.6"
   },
   "devDependencies": {
