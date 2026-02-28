@@ -1,6 +1,6 @@
 {
   "name": "@cjroth/rebalance",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "type": "module",
   "bin": {
     "rebalance": "./dist/cli.js"
