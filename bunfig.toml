@@ -1,0 +1,3 @@
+[test]
+preload = ["@happy-dom/global-registrator"]
+
