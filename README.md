@@ -1,6 +1,8 @@
 # Rebalance
 
-A portfolio rebalancing tool that runs in both the terminal and the browser from a single codebase, powered by [ink-web](https://ink-web.dev).
+> **Disclaimer:** This tool is for educational and informational purposes only and is not intended as financial or investment advice. I am not a financial advisor. This software is provided "as-is" with no warranties of accuracy or completeness. It may contain bugs or calculation errors. Do not rely on it for actual investment decisions. Consult a qualified financial professional before making any trades. I accept no liability for any losses or damages arising from use of this tool.
+
+A portfolio rebalancing tool that runs in both the terminal and the browser from a single codebase, powered by [ink-web](https://ink-web.dev). [Read the blog post](https://www.cjroth.com/blog/2026-02-27-building-an-investment-rebalancer-tui).
 
 ![screenshot](./screenshot.png)
 
@@ -27,6 +29,12 @@ Both strategies use a largest-remainder algorithm to convert dollar targets into
 The UI is built with [Ink](https://github.com/vadimdemedes/ink) (React for the terminal). [ink-web](https://ink-web.dev) bridges Ink to the browser by polyfilling Node.js APIs and connecting Ink's renderer to [xterm.js](https://xtermjs.org/). The same React components render natively in both environments — no code duplication.
 
 In the browser, portfolio data is stored locally using the [Origin Private File System](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) (OPFS). In the terminal, it uses the local filesystem. A `StorageAdapter` interface abstracts the difference.
+
+## Install
+
+```bash
+npm install -g @cjroth/rebalance
+```
 
 ## Usage
 
