@@ -1,4 +1,4 @@
-# Rebalancer
+# Rebalance
 
 A portfolio rebalancing tool that runs in both the terminal and the browser from a single codebase, powered by [ink-web](https://ink-web.dev).
 
@@ -79,16 +79,16 @@ Only `#holdings` is required. Charles Schwab CSV exports are also auto-detected 
 
 ## As a library
 
-The rebalancing logic is published as `@cjroth/rebalancer` and can be used programmatically:
+The rebalancing logic is published as `@cjroth/rebalance` and can be used programmatically:
 
 ```ts
-import { calculateRebalanceMinTrades, calculateRebalance, convertToWholeShares } from '@cjroth/rebalancer'
+import { calculateRebalanceMinTrades, calculateRebalance, convertToWholeShares } from '@cjroth/rebalance'
 ```
 
 There's also a Next.js-compatible export for embedding the wizard in a web app:
 
 ```ts
-import { Wizard } from '@cjroth/rebalancer/next'
+import { Wizard } from '@cjroth/rebalance/next'
 ```
 
 ## Tech stack

@@ -1,9 +1,9 @@
 {
-  "name": "@cjroth/rebalancer",
+  "name": "@cjroth/rebalance",
   "version": "0.2.2",
   "type": "module",
   "bin": {
-    "rebalancer": "./dist/cli.js"
+    "rebalance": "./dist/cli.js"
   },
   "exports": {
     ".": {
