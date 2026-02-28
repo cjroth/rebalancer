@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Box, Text, useInput, useApp } from 'ink'
 import { Table } from '../components/table'
 import { StatusBar } from '../components/status-bar'
@@ -6,9 +6,8 @@ import { StepHeader } from '../components/step-header'
 import type { Column, Cell } from '../components/table'
 import type { StatusBarItem } from '../components/status-bar'
 import {
-  loadPortfolio,
-  loadPortfolioData,
-  savePortfolio,
+  loadPortfolioAsync,
+  loadPortfolioDataAsync,
   savePortfolioAsync,
   roundPercent,
   smartRoundPercentages,
@@ -16,6 +15,7 @@ import {
   buildAccounts,
   buildHoldings,
 } from './state.ts'
+import { FsStorageAdapter } from './storage.ts'
 import type { StorageAdapter } from './storage.ts'
 import type { RebalanceInput, Symbol, Account, Holding } from '../lib/types.ts'
 
@@ -41,9 +41,26 @@ interface TargetRow {
 export function Step3Targets({ dataDir, storage, onComplete, onBack, onReset, portfolioInput: preloadedInput, portfolioData: preloadedData, onPortfolioImported }: Step3Props) {
   const { exit } = useApp()
 
-  const isBrowser = !!storage
-  const { symbols, holdings } = preloadedData ?? loadPortfolioData(dataDir)
-  const portfolioInput = preloadedInput ?? loadPortfolio(dataDir)
+  const adapter = storage ?? new FsStorageAdapter(dataDir)
+
+  const [loadedData, setLoadedData] = useState(preloadedData ?? null)
+  const [loadedInput, setLoadedInput] = useState(preloadedInput ?? null)
+
+  useEffect(() => {
+    if (!loadedData) {
+      loadPortfolioDataAsync(adapter).then(setLoadedData)
+    }
+    if (!loadedInput) {
+      loadPortfolioAsync(adapter).then(setLoadedInput)
+    }
+  }, [])
+
+  if (!loadedData || !loadedInput) {
+    return <Box paddingX={1}><Text dimColor>Loading...</Text></Box>
+  }
+
+  const { symbols, holdings } = loadedData
+  const portfolioInput = loadedInput
 
   const totalValue = useMemo(
     () => holdings.reduce((sum, h) => sum + h.amount, 0),
@@ -148,18 +165,13 @@ export function Step3Targets({ dataDir, storage, onComplete, onBack, onReset, po
         }
       }
       const updated = { ...portfolioInput, targets }
-      if (isBrowser) {
-        savePortfolioAsync(storage!, updated)
-        // Update in-memory state for downstream steps
-        const syms = buildSymbols(updated)
-        onPortfolioImported?.(updated, {
-          symbols: syms,
-          accounts: buildAccounts(updated),
-          holdings: buildHoldings(updated, syms),
-        })
-      } else {
-        savePortfolio(dataDir, updated)
-      }
+      savePortfolioAsync(adapter, updated)
+      const syms = buildSymbols(updated)
+      onPortfolioImported?.(updated, {
+        symbols: syms,
+        accounts: buildAccounts(updated),
+        holdings: buildHoldings(updated, syms),
+      })
       onComplete()
       return
     }

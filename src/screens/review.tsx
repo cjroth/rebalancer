@@ -1,7 +1,9 @@
-import { Box, useApp } from 'ink'
+import { useEffect, useState } from 'react'
+import { Box, Text, useApp } from 'ink'
 import { App } from '../tui/App.tsx'
 import { StepHeader } from '../components/step-header'
-import { loadPortfolioData } from './state.ts'
+import { loadPortfolioDataAsync } from './state.ts'
+import { FsStorageAdapter } from './storage.ts'
 import type { StorageAdapter } from './storage.ts'
 import type { RebalanceInput, Symbol, Account, Holding } from '../lib/types.ts'
 
@@ -15,11 +17,24 @@ interface Step2Props {
   portfolioData?: { symbols: Symbol[]; accounts: Account[]; holdings: Holding[] } | null
 }
 
-export function Step2Review({ dataDir, storage: _storage, onComplete, onBack, onReset, portfolioData: preloaded }: Step2Props) {
+export function Step2Review({ dataDir, storage, onComplete, onBack, onReset, portfolioData: preloaded }: Step2Props) {
   const { exit } = useApp()
 
-  // Use pre-loaded data (browser) or load from fs (terminal)
-  const { symbols, accounts, holdings } = preloaded ?? loadPortfolioData(dataDir)
+  const adapter = storage ?? new FsStorageAdapter(dataDir)
+
+  const [data, setData] = useState(preloaded ?? null)
+
+  useEffect(() => {
+    if (!data) {
+      loadPortfolioDataAsync(adapter).then(setData)
+    }
+  }, [])
+
+  if (!data) {
+    return <Box paddingX={1}><Text dimColor>Loading...</Text></Box>
+  }
+
+  const { symbols, accounts, holdings } = data
 
   return (
     <Box flexDirection="column">

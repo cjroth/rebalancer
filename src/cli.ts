@@ -5,35 +5,40 @@ import { Step1Import } from './screens/import.tsx'
 import { Step2Review } from './screens/review.tsx'
 import { Step3Targets } from './screens/targets.tsx'
 import { Step4Trades } from './screens/trades.tsx'
-import { ensureDataDir, readWizardState } from './screens/state.ts'
+import { readWizardStateAsync } from './screens/state.ts'
+import { FsStorageAdapter } from './screens/storage.ts'
 
 const SUBCOMMANDS = new Set(['import', 'review', 'targets', 'trades'])
 const arg = process.argv[2]
 const subcommand = arg && SUBCOMMANDS.has(arg) ? arg : undefined
 const dataDirArg = subcommand ? process.argv[3] : arg
 const dataDir = dataDirArg || './portfolio-data'
-ensureDataDir(dataDir)
+const storage = new FsStorageAdapter(dataDir)
 
 function exit() {
   process.exit(0)
 }
 
-switch (subcommand) {
-  case 'import':
-    render(React.createElement(Step1Import, { dataDir, onComplete: exit }))
-    break
-  case 'review':
-    render(React.createElement(Step2Review, { dataDir, onComplete: exit }))
-    break
-  case 'targets':
-    render(React.createElement(Step3Targets, { dataDir, onComplete: exit }))
-    break
-  case 'trades':
-    render(React.createElement(Step4Trades, { dataDir, onComplete: exit }))
-    break
-  default: {
-    const state = readWizardState(dataDir)
-    render(React.createElement(Wizard, { dataDir, initialStep: state.currentStep }))
-    break
+async function main() {
+  switch (subcommand) {
+    case 'import':
+      render(React.createElement(Step1Import, { dataDir, storage, onComplete: exit }))
+      break
+    case 'review':
+      render(React.createElement(Step2Review, { dataDir, storage, onComplete: exit }))
+      break
+    case 'targets':
+      render(React.createElement(Step3Targets, { dataDir, storage, onComplete: exit }))
+      break
+    case 'trades':
+      render(React.createElement(Step4Trades, { dataDir, storage, onComplete: exit }))
+      break
+    default: {
+      const state = await readWizardStateAsync(storage)
+      render(React.createElement(Wizard, { dataDir, storage, initialStep: state.currentStep }))
+      break
+    }
   }
 }
+
+main()

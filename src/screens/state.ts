@@ -4,8 +4,7 @@ import { parseSchwabExport } from '../utils/parse-schwab'
 import { buildSymbols, buildAccounts, buildHoldings } from '../lib/input'
 import type { RebalanceInput, Symbol, Account, Holding, Trade } from '../lib/types'
 import type { StorageAdapter } from './storage'
-import * as fs from 'fs'
-import { join } from 'path'
+import { FsStorageAdapter } from './storage'
 
 // --- Data directory (terminal only) ---
 
@@ -13,7 +12,8 @@ export function getDataDir(): string {
   return process.argv[2] || './portfolio-data'
 }
 
-export function ensureDataDir(dir: string): void {
+export async function ensureDataDir(dir: string): Promise<void> {
+  const fs = await import('fs')
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true })
   }
@@ -25,51 +25,38 @@ export interface WizardState {
   currentStep: number
 }
 
-// Sync versions (terminal only)
-export function readWizardState(dir: string): WizardState {
-  const path = join(dir, 'wizard-state.json')
-  try {
-    const text = fs.readFileSync(path, 'utf-8')
-    return JSON.parse(text)
-  } catch {
-    return { currentStep: 1 }
-  }
+// Dir-based versions (delegate to FsStorageAdapter)
+export async function readWizardState(dir: string): Promise<WizardState> {
+  return readWizardStateAsync(new FsStorageAdapter(dir))
 }
 
-export function writeWizardState(dir: string, state: WizardState): void {
-  const path = join(dir, 'wizard-state.json')
-  fs.writeFileSync(path, JSON.stringify(state, null, 2) + '\n')
+export async function writeWizardState(dir: string, state: WizardState): Promise<void> {
+  return writeWizardStateAsync(new FsStorageAdapter(dir), state)
 }
 
-// --- Portfolio I/O (sync, terminal only) ---
+// --- Portfolio I/O (dir-based, delegate to FsStorageAdapter) ---
 
-export function loadPortfolio(dir: string): RebalanceInput {
-  const path = join(dir, 'portfolio.csv')
-  const text = fs.readFileSync(path, 'utf-8')
-  return parsePortfolioCsv(text)
+export async function loadPortfolio(dir: string): Promise<RebalanceInput> {
+  const result = await loadPortfolioAsync(new FsStorageAdapter(dir))
+  if (!result) throw new Error(`No portfolio found in ${dir}`)
+  return result
 }
 
-export function savePortfolio(dir: string, input: RebalanceInput): void {
-  ensureDataDir(dir)
-  const path = join(dir, 'portfolio.csv')
-  fs.writeFileSync(path, toPortfolioCsv(input))
+export async function savePortfolio(dir: string, input: RebalanceInput): Promise<void> {
+  return savePortfolioAsync(new FsStorageAdapter(dir), input)
 }
 
-export function portfolioExists(dir: string): boolean {
-  return fs.existsSync(join(dir, 'portfolio.csv'))
+export async function portfolioExists(dir: string): Promise<boolean> {
+  return portfolioExistsAsync(new FsStorageAdapter(dir))
 }
 
-export function loadPortfolioData(dir: string): { symbols: Symbol[]; accounts: Account[]; holdings: Holding[] } {
-  const input = loadPortfolio(dir)
-  const symbols = buildSymbols(input)
-  return {
-    symbols,
-    accounts: buildAccounts(input),
-    holdings: buildHoldings(input, symbols),
-  }
+export async function loadPortfolioData(dir: string): Promise<{ symbols: Symbol[]; accounts: Account[]; holdings: Holding[] }> {
+  const result = await loadPortfolioDataAsync(new FsStorageAdapter(dir))
+  if (!result) throw new Error(`No portfolio found in ${dir}`)
+  return result
 }
 
-// --- Async versions (browser via StorageAdapter) ---
+// --- Async versions (via StorageAdapter) ---
 
 export async function readWizardStateAsync(storage: StorageAdapter): Promise<WizardState> {
   const text = await storage.read('wizard-state.json')

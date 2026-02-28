@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Box, Text, useInput, useApp } from 'ink'
 import { Table as DataTable } from '../components/table'
 import { StatusBar } from '../components/status-bar'
@@ -6,9 +6,8 @@ import { StepHeader } from '../components/step-header'
 import type { Cell } from '../components/table'
 import type { StatusBarItem } from '../components/status-bar'
 import {
-  ensureDataDir,
-  loadPortfolio,
-  loadPortfolioData,
+  loadPortfolioAsync,
+  loadPortfolioDataAsync,
   formatTradesCsv,
 } from './state.ts'
 import { calculateRebalance, calculateRebalanceMinTrades, convertToWholeShares } from '../lib/rebalance.ts'
@@ -17,9 +16,8 @@ import { computeTableData } from '../lib/table.ts'
 import { DimSelector } from '../tui/DimSelector.tsx'
 import { Table } from '../tui/Table.tsx'
 import type { Holding, RebalanceInput, Symbol, Account } from '../lib/types'
+import { FsStorageAdapter } from './storage.ts'
 import type { StorageAdapter } from './storage.ts'
-import * as nodeFs from 'fs'
-import { join } from 'path'
 
 interface Step4Props {
   dataDir: string
@@ -43,13 +41,31 @@ function formatUSD(amount: number): string {
 export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, portfolioInput: preloadedInput, portfolioData: preloadedData }: Step4Props) {
   const { exit: _exit } = useApp()
 
-  const isBrowser = !!storage
-  const { symbols, accounts, holdings } = preloadedData ?? loadPortfolioData(dataDir)
-  const input = preloadedInput ?? loadPortfolio(dataDir)
+  const adapter = storage ?? new FsStorageAdapter(dataDir)
 
-  const [strategyIndex, setStrategyIndex] = useState(input.strategy === 'consolidate' ? 1 : 0)
+  const [loadedData, setLoadedData] = useState(preloadedData ?? null)
+  const [loadedInput, setLoadedInput] = useState(preloadedInput ?? null)
+
+  useEffect(() => {
+    if (!loadedData) {
+      loadPortfolioDataAsync(adapter).then(setLoadedData)
+    }
+    if (!loadedInput) {
+      loadPortfolioAsync(adapter).then(setLoadedInput)
+    }
+  }, [])
+
+  const [strategyIndex, setStrategyIndex] = useState(() =>
+    loadedInput?.strategy === 'consolidate' ? 1 : 0
+  )
   const [viewIndex, setViewIndex] = useState(0)
   const [focus, setFocus] = useState<Focus>('strategy')
+
+  if (!loadedData || !loadedInput) {
+    return <Box paddingX={1}><Text dimColor>Loading...</Text></Box>
+  }
+
+  const { symbols, accounts, holdings } = loadedData
 
   const strategy = strategyIndex === 0 ? 'min_trades' : 'consolidate' as const
 
@@ -66,15 +82,9 @@ export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, por
   useMemo(() => {
     if (trades.length > 0) {
       const csv = formatTradesCsv(trades)
-      if (isBrowser) {
-        storage!.write('trades.csv', csv)
-      } else {
-        ensureDataDir(dataDir)
-        const path = join(dataDir, 'trades.csv')
-        nodeFs.writeFileSync(path, csv)
-      }
+      adapter.write('trades.csv', csv)
     }
-  }, [trades, dataDir, isBrowser, storage])
+  }, [trades, adapter])
 
   const totalValue = holdings.reduce((sum, h) => sum + h.amount, 0)
 
@@ -194,7 +204,7 @@ export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, por
           {trades.length > 0 && (
             <Box marginTop={1}>
               <Text dimColor>
-                {isBrowser ? 'Trades saved to browser storage' : `Trades written to ${dataDir}/trades.csv`}
+                {storage ? 'Trades saved to browser storage' : `Trades written to ${dataDir}/trades.csv`}
               </Text>
             </Box>
           )}

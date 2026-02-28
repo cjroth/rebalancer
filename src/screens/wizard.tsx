@@ -1,14 +1,13 @@
 import { useState } from 'react'
 import { Box, Text, useInput, useApp } from 'ink'
-import { writeWizardState, writeWizardStateAsync } from './state.ts'
+import { writeWizardStateAsync } from './state.ts'
 import { Step1Import } from './import.tsx'
 import { Step2Review } from './review.tsx'
 import { Step3Targets } from './targets.tsx'
 import { Step4Trades } from './trades.tsx'
+import { FsStorageAdapter } from './storage.ts'
 import type { StorageAdapter } from './storage.ts'
 import type { RebalanceInput, Symbol, Account, Holding } from '../lib/types.ts'
-import * as fs from 'fs'
-import { join } from 'path'
 
 export interface WizardProps {
   /** Terminal mode: data directory path */
@@ -56,24 +55,16 @@ export function Wizard({ dataDir, storage, initialStep, preloadedPortfolio, prel
   const [portfolioInput, setPortfolioInput] = useState<RebalanceInput | null>(preloadedPortfolio ?? null)
   const [portfolioData, setPortfolioData] = useState(preloadedData ?? null)
 
-  const isBrowser = !!storage
+  const adapter = storage ?? new FsStorageAdapter(dataDir!)
 
   const goTo = (target: number) => {
     if (target < 1) return
     if (target > 4) {
-      if (isBrowser) {
-        writeWizardStateAsync(storage!, { currentStep: 1 })
-      } else {
-        writeWizardState(dataDir!, { currentStep: 1 })
-      }
+      writeWizardStateAsync(adapter, { currentStep: 1 })
       exit()
       return
     }
-    if (isBrowser) {
-      writeWizardStateAsync(storage!, { currentStep: target })
-    } else {
-      writeWizardState(dataDir!, { currentStep: target })
-    }
+    writeWizardStateAsync(adapter, { currentStep: target })
     setStep(target)
   }
 
@@ -82,24 +73,12 @@ export function Wizard({ dataDir, storage, initialStep, preloadedPortfolio, prel
   const requestReset = () => setConfirming(true)
 
   const doReset = () => {
-    if (isBrowser) {
-      const files = ['portfolio.csv', 'trades.csv', 'wizard-state.json']
-      for (const f of files) storage!.remove(f)
-      setPortfolioInput(null)
-      setPortfolioData(null)
-    } else {
-      const files = ['portfolio.csv', 'trades.csv', 'wizard-state.json']
-      for (const f of files) {
-        const p = join(dataDir!, f)
-        if (fs.existsSync(p)) fs.unlinkSync(p)
-      }
-    }
+    const files = ['portfolio.csv', 'trades.csv', 'wizard-state.json']
+    for (const f of files) adapter.remove(f)
+    setPortfolioInput(null)
+    setPortfolioData(null)
     setConfirming(false)
-    if (isBrowser) {
-      writeWizardStateAsync(storage!, { currentStep: 1 })
-    } else {
-      writeWizardState(dataDir!, { currentStep: 1 })
-    }
+    writeWizardStateAsync(adapter, { currentStep: 1 })
     setStep(1)
   }
 

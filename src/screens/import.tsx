@@ -5,22 +5,20 @@ import type { SelectInputItem } from '../components/select-input'
 import { AsciiTitle } from '../components/ascii-title'
 import { StepHeader } from '../components/step-header'
 import {
-  ensureDataDir,
   detectCsvSource,
-  savePortfolio,
   savePortfolioAsync,
-  loadPortfolio,
-  portfolioExists,
+  loadPortfolioAsync,
+  portfolioExistsAsync,
   parsePortfolioCsv,
   parseSchwabExport,
   buildSymbols,
   buildAccounts,
   buildHoldings,
 } from './state.ts'
+import { FsStorageAdapter } from './storage.ts'
 import type { StorageAdapter } from './storage.ts'
 import type { RebalanceInput, Symbol, Account, Holding } from '../lib/types'
 import { demoScenarios } from '../lib/demo-portfolios.ts'
-import * as nodeFs from 'fs'
 
 interface Step1Props {
   dataDir: string
@@ -80,24 +78,20 @@ export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onR
 
   const isBrowser = !!storage
 
+  const adapter = storage ?? new FsStorageAdapter(dataDir)
+
   const handleCsvText = useCallback(async (text: string, sourceLabel?: string) => {
     try {
       let existing: RebalanceInput | undefined
-      if (isBrowser) {
-        const loaded = existingPortfolio ?? undefined
-        existing = loaded ?? undefined
-      } else {
-        existing = portfolioExists(dataDir) ? loadPortfolio(dataDir) : undefined
+      if (existingPortfolio) {
+        existing = existingPortfolio
+      } else if (await portfolioExistsAsync(adapter)) {
+        existing = (await loadPortfolioAsync(adapter)) ?? undefined
       }
 
       const { result, source } = processImport(text, existing)
 
-      if (isBrowser) {
-        await savePortfolioAsync(storage!, result)
-      } else {
-        ensureDataDir(dataDir)
-        savePortfolio(dataDir, result)
-      }
+      await savePortfolioAsync(adapter, result)
 
       const symbols = buildSymbols(result)
       const data = {
@@ -113,7 +107,7 @@ export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onR
     } catch (e: any) {
       setError(e.message || String(e))
     }
-  }, [isBrowser, storage, dataDir, existingPortfolio, onPortfolioImported])
+  }, [adapter, existingPortfolio, onPortfolioImported])
 
   // Browser mode: handle file drops from any phase
   useEffect(() => {
@@ -148,13 +142,16 @@ export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onR
         if (isBrowser) {
           handleCsvText(raw)
         } else {
-          const filePath = raw.replace(/^['"]|['"]$/g, '')
-          try {
-            const text = nodeFs.readFileSync(filePath, 'utf-8')
-            handleCsvText(text)
-          } catch (e: any) {
-            setError(e.message || String(e))
-          }
+          ;(async () => {
+            const filePath = raw.replace(/^['"]|['"]$/g, '')
+            try {
+              const nodeFs = await import('fs')
+              const text = nodeFs.readFileSync(filePath, 'utf-8')
+              handleCsvText(text)
+            } catch (e: any) {
+              setError(e.message || String(e))
+            }
+          })()
         }
       }
       return
