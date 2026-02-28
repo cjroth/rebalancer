@@ -4,8 +4,8 @@ export default defineConfig([
   // Browser entry points (index + next)
   {
     entry: {
-      index: 'rebalancer/index.ts',
-      next: 'rebalancer/next.ts',
+      index: 'src/index.ts',
+      next: 'src/next.ts',
     },
     format: ['esm'],
     dts: true,
@@ -32,7 +32,7 @@ export default defineConfig([
   },
   // CLI entry point
   {
-    entry: { cli: 'rebalancer/cli.ts' },
+    entry: { cli: 'src/cli.ts' },
     format: ['esm'],
     dts: false,
     sourcemap: true,
