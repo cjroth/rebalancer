@@ -49,7 +49,7 @@ export default defineConfig(async () => {
     },
     build: {
       target: 'esnext',
-      outDir: path.resolve(__dirname, 'dist/wizard'),
+      outDir: path.resolve(__dirname, 'dist'),
     },
     optimizeDeps: {
       esbuildOptions: {
