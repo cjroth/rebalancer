@@ -5,7 +5,6 @@ import { Step1Import } from './import.tsx'
 import { Step2Review } from './review.tsx'
 import { Step3Targets } from './targets.tsx'
 import { Step4Trades } from './trades.tsx'
-import { FsStorageAdapter } from './storage.ts'
 import type { StorageAdapter } from './storage.ts'
 import type { RebalanceInput, Symbol, Account, Holding } from '../lib/types.ts'
 
@@ -24,6 +23,8 @@ export interface WizardProps {
   droppedCsv?: string | null
   /** Browser mode: callback to clear droppedCsv after consumption */
   onDropConsumed?: () => void
+  /** Terminal mode: callback to read a file by path */
+  readFile?: (path: string) => string
 }
 
 function ConfirmReset({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
@@ -47,7 +48,7 @@ function ConfirmReset({ onConfirm, onCancel }: { onConfirm: () => void; onCancel
   )
 }
 
-export function Wizard({ dataDir, storage, initialStep, preloadedPortfolio, preloadedData, droppedCsv, onDropConsumed }: WizardProps) {
+export function Wizard({ dataDir, storage, initialStep, preloadedPortfolio, preloadedData, droppedCsv, onDropConsumed, readFile }: WizardProps) {
   const { exit } = useApp()
   const [step, setStep] = useState(initialStep)
   const [confirming, setConfirming] = useState(false)
@@ -55,7 +56,7 @@ export function Wizard({ dataDir, storage, initialStep, preloadedPortfolio, prel
   const [portfolioInput, setPortfolioInput] = useState<RebalanceInput | null>(preloadedPortfolio ?? null)
   const [portfolioData, setPortfolioData] = useState(preloadedData ?? null)
 
-  const adapter = storage ?? new FsStorageAdapter(dataDir!)
+  const adapter = storage!
 
   const goTo = (target: number) => {
     if (target < 1) return
@@ -102,6 +103,7 @@ export function Wizard({ dataDir, storage, initialStep, preloadedPortfolio, prel
     portfolioData,
     droppedCsv,
     onDropConsumed,
+    readFile,
   }
 
   switch (step) {

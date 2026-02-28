@@ -3,7 +3,6 @@ import { Box, Text, useApp } from 'ink'
 import { App } from '../tui/App.tsx'
 import { StepHeader } from '../components/step-header'
 import { loadPortfolioDataAsync } from './state.ts'
-import { FsStorageAdapter } from './storage.ts'
 import type { StorageAdapter } from './storage.ts'
 import type { RebalanceInput, Symbol, Account, Holding } from '../lib/types.ts'
 
@@ -17,10 +16,10 @@ interface Step2Props {
   portfolioData?: { symbols: Symbol[]; accounts: Account[]; holdings: Holding[] } | null
 }
 
-export function Step2Review({ dataDir, storage, onComplete, onBack, onReset, portfolioData: preloaded }: Step2Props) {
+export function Step2Review({ dataDir: _dataDir, storage, onComplete, onBack, onReset, portfolioData: preloaded }: Step2Props) {
   const { exit } = useApp()
 
-  const adapter = storage ?? new FsStorageAdapter(dataDir)
+  const adapter = storage!
 
   const [data, setData] = useState(preloaded ?? null)
 

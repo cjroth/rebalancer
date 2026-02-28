@@ -9,24 +9,16 @@ export { Step3Targets as TargetsScreen } from './screens/targets.tsx'
 export { Step4Trades as TradesScreen } from './screens/trades.tsx'
 
 // Storage adapters
-export { OpfsStorageAdapter, FsStorageAdapter } from './screens/storage.ts'
+export { OpfsStorageAdapter } from './screens/storage.ts'
 export type { StorageAdapter } from './screens/storage.ts'
 
 // State helpers
 export {
-  getDataDir,
-  ensureDataDir,
-  readWizardState,
-  writeWizardState,
   readWizardStateAsync,
   writeWizardStateAsync,
-  loadPortfolio,
   loadPortfolioAsync,
-  loadPortfolioData,
   loadPortfolioDataAsync,
-  savePortfolio,
   savePortfolioAsync,
-  portfolioExists,
   portfolioExistsAsync,
 } from './screens/state.ts'
 

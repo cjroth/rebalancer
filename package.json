@@ -14,6 +14,10 @@
       "types": "./dist/next.d.ts",
       "import": "./dist/next.js"
     },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    },
     "./css": "ink-web/css"
   },
   "main": "./dist/index.js",

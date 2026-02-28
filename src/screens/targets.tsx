@@ -15,7 +15,6 @@ import {
   buildAccounts,
   buildHoldings,
 } from './state.ts'
-import { FsStorageAdapter } from './storage.ts'
 import type { StorageAdapter } from './storage.ts'
 import type { RebalanceInput, Symbol, Account, Holding } from '../lib/types.ts'
 
@@ -38,10 +37,10 @@ interface TargetRow {
   targetPercent: number
 }
 
-export function Step3Targets({ dataDir, storage, onComplete, onBack, onReset, portfolioInput: preloadedInput, portfolioData: preloadedData, onPortfolioImported }: Step3Props) {
+export function Step3Targets({ dataDir: _dataDir, storage, onComplete, onBack, onReset, portfolioInput: preloadedInput, portfolioData: preloadedData, onPortfolioImported }: Step3Props) {
   const { exit } = useApp()
 
-  const adapter = storage ?? new FsStorageAdapter(dataDir)
+  const adapter = storage!
 
   const [loadedData, setLoadedData] = useState(preloadedData ?? null)
   const [loadedInput, setLoadedInput] = useState(preloadedInput ?? null)

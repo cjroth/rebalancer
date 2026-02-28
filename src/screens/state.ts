@@ -4,59 +4,12 @@ import { parseSchwabExport } from '../utils/parse-schwab'
 import { buildSymbols, buildAccounts, buildHoldings } from '../lib/input'
 import type { RebalanceInput, Symbol, Account, Holding, Trade } from '../lib/types'
 import type { StorageAdapter } from './storage'
-import { FsStorageAdapter } from './storage'
-
-// --- Data directory (terminal only) ---
-
-export function getDataDir(): string {
-  return process.argv[2] || './portfolio-data'
-}
-
-export async function ensureDataDir(dir: string): Promise<void> {
-  const fs = await import('fs')
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
-  }
-}
 
 // --- Wizard state ---
 
 export interface WizardState {
   currentStep: number
 }
-
-// Dir-based versions (delegate to FsStorageAdapter)
-export async function readWizardState(dir: string): Promise<WizardState> {
-  return readWizardStateAsync(new FsStorageAdapter(dir))
-}
-
-export async function writeWizardState(dir: string, state: WizardState): Promise<void> {
-  return writeWizardStateAsync(new FsStorageAdapter(dir), state)
-}
-
-// --- Portfolio I/O (dir-based, delegate to FsStorageAdapter) ---
-
-export async function loadPortfolio(dir: string): Promise<RebalanceInput> {
-  const result = await loadPortfolioAsync(new FsStorageAdapter(dir))
-  if (!result) throw new Error(`No portfolio found in ${dir}`)
-  return result
-}
-
-export async function savePortfolio(dir: string, input: RebalanceInput): Promise<void> {
-  return savePortfolioAsync(new FsStorageAdapter(dir), input)
-}
-
-export async function portfolioExists(dir: string): Promise<boolean> {
-  return portfolioExistsAsync(new FsStorageAdapter(dir))
-}
-
-export async function loadPortfolioData(dir: string): Promise<{ symbols: Symbol[]; accounts: Account[]; holdings: Holding[] }> {
-  const result = await loadPortfolioDataAsync(new FsStorageAdapter(dir))
-  if (!result) throw new Error(`No portfolio found in ${dir}`)
-  return result
-}
-
-// --- Async versions (via StorageAdapter) ---
 
 export async function readWizardStateAsync(storage: StorageAdapter): Promise<WizardState> {
   const text = await storage.read('wizard-state.json')
@@ -69,6 +22,8 @@ export async function readWizardStateAsync(storage: StorageAdapter): Promise<Wiz
 export async function writeWizardStateAsync(storage: StorageAdapter, state: WizardState): Promise<void> {
   await storage.write('wizard-state.json', JSON.stringify(state, null, 2) + '\n')
 }
+
+// --- Portfolio I/O (via StorageAdapter) ---
 
 export async function loadPortfolioAsync(storage: StorageAdapter): Promise<RebalanceInput | null> {
   const text = await storage.read('portfolio.csv')

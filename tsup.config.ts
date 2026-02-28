@@ -30,6 +30,24 @@ export default defineConfig([
       /^node:/,
     ],
   },
+  // Node entry point (FsStorageAdapter)
+  {
+    entry: { node: 'src/node.ts' },
+    format: ['esm'],
+    dts: true,
+    sourcemap: true,
+    clean: false,
+    target: 'node18',
+    platform: 'node',
+    external: [
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      'ink',
+      'ink-web',
+      'zod',
+    ],
+  },
   // CLI entry point
   {
     entry: { cli: 'src/cli.ts' },

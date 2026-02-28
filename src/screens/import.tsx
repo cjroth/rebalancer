@@ -15,7 +15,6 @@ import {
   buildAccounts,
   buildHoldings,
 } from './state.ts'
-import { FsStorageAdapter } from './storage.ts'
 import type { StorageAdapter } from './storage.ts'
 import type { RebalanceInput, Symbol, Account, Holding } from '../lib/types'
 import { demoScenarios } from '../lib/demo-portfolios.ts'
@@ -33,6 +32,8 @@ interface Step1Props {
   droppedCsv?: string | null
   /** Browser mode: callback to clear droppedCsv after consumption */
   onDropConsumed?: () => void
+  /** Terminal mode: callback to read a file by path (avoids bundling fs in browser) */
+  readFile?: (path: string) => string
 }
 
 type Phase = 'input' | 'done'
@@ -69,7 +70,7 @@ const demoItems: SelectInputItem<number>[] = demoScenarios.map((demo, i) => ({
   value: i,
 }))
 
-export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onReset, portfolioInput: existingPortfolio, onPortfolioImported, droppedCsv, onDropConsumed }: Step1Props) {
+export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onReset, portfolioInput: existingPortfolio, onPortfolioImported, droppedCsv, onDropConsumed, readFile }: Step1Props) {
   const { exit } = useApp()
   const [inputBuffer, setInputBuffer] = useState('')
   const [phase, setPhase] = useState<Phase>('input')
@@ -78,7 +79,7 @@ export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onR
 
   const isBrowser = !!storage
 
-  const adapter = storage ?? new FsStorageAdapter(dataDir)
+  const adapter = storage!
 
   const handleCsvText = useCallback(async (text: string, sourceLabel?: string) => {
     try {
@@ -139,19 +140,16 @@ export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onR
     if (key.return) {
       const raw = inputBuffer.trim()
       if (raw) {
-        if (isBrowser) {
+        if (isBrowser || !readFile) {
           handleCsvText(raw)
         } else {
-          ;(async () => {
-            const filePath = raw.replace(/^['"]|['"]$/g, '')
-            try {
-              const nodeFs = await import('fs')
-              const text = nodeFs.readFileSync(filePath, 'utf-8')
-              handleCsvText(text)
-            } catch (e: any) {
-              setError(e.message || String(e))
-            }
-          })()
+          const filePath = raw.replace(/^['"]|['"]$/g, '')
+          try {
+            const text = readFile(filePath)
+            handleCsvText(text)
+          } catch (e: any) {
+            setError(e.message || String(e))
+          }
         }
       }
       return

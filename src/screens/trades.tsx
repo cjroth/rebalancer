@@ -16,7 +16,6 @@ import { computeTableData } from '../lib/table.ts'
 import { DimSelector } from '../tui/DimSelector.tsx'
 import { Table } from '../tui/Table.tsx'
 import type { Holding, RebalanceInput, Symbol, Account } from '../lib/types'
-import { FsStorageAdapter } from './storage.ts'
 import type { StorageAdapter } from './storage.ts'
 
 interface Step4Props {
@@ -41,7 +40,7 @@ function formatUSD(amount: number): string {
 export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, portfolioInput: preloadedInput, portfolioData: preloadedData }: Step4Props) {
   const { exit: _exit } = useApp()
 
-  const adapter = storage ?? new FsStorageAdapter(dataDir)
+  const adapter = storage!
 
   const [loadedData, setLoadedData] = useState(preloadedData ?? null)
   const [loadedInput, setLoadedInput] = useState(preloadedInput ?? null)
