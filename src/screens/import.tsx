@@ -4,6 +4,8 @@ import { SelectInput } from '../components/select-input'
 import type { SelectInputItem } from '../components/select-input'
 import { AsciiTitle } from '../components/ascii-title'
 import { StepHeader } from '../components/step-header'
+import { StatusBar } from '../components/status-bar.tsx'
+import type { StatusBarItem } from '../components/status-bar.tsx'
 import {
   detectCsvSource,
   savePortfolioAsync,
@@ -34,9 +36,8 @@ interface Step1Props {
   onDropConsumed?: () => void
   /** Terminal mode: callback to read a file by path (avoids bundling fs in browser) */
   readFile?: (path: string) => string
+  extraStatusItems?: StatusBarItem[]
 }
-
-type Phase = 'input' | 'done'
 
 function processImport(
   text: string,
@@ -70,12 +71,12 @@ const demoItems: SelectInputItem<number>[] = demoScenarios.map((demo, i) => ({
   value: i,
 }))
 
-export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onReset, portfolioInput: existingPortfolio, onPortfolioImported, droppedCsv, onDropConsumed, readFile }: Step1Props) {
+export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onReset, portfolioInput: existingPortfolio, onPortfolioImported, droppedCsv, onDropConsumed, readFile, extraStatusItems }: Step1Props) {
   const { exit } = useApp()
   const [inputBuffer, setInputBuffer] = useState('')
-  const [phase, setPhase] = useState<Phase>('input')
   const [error, setError] = useState('')
   const [summary, setSummary] = useState('')
+  const [imported, setImported] = useState(false)
 
   const isBrowser = !!storage
 
@@ -103,7 +104,7 @@ export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onR
       onPortfolioImported?.(result, data)
 
       setSummary(buildSummary(result, sourceLabel ?? source))
-      setPhase('done')
+      setImported(true)
       setError('')
     } catch (e: any) {
       setError(e.message || String(e))
@@ -124,7 +125,12 @@ export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onR
       return
     }
 
-    if (phase === 'done') {
+    if (imported) {
+      if (input === 'b') {
+        setImported(false)
+        setSummary('')
+        return
+      }
       if (input === 'z' && onReset) {
         onReset()
         return
@@ -135,7 +141,7 @@ export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onR
       return
     }
 
-    // === Input phase: text entry for file path / CSV paste ===
+    // === Text entry for file path / CSV paste ===
 
     if (key.return) {
       const raw = inputBuffer.trim()
@@ -170,66 +176,67 @@ export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onR
     handleCsvText(demo.csv, `demo (${demo.label})`)
   }, [handleCsvText])
 
+  const statusItems: StatusBarItem[] = []
+  if (imported) statusItems.push({ key: 'b', label: 'back' })
+  if (onReset) statusItems.push({ key: 'z', label: 'reset' })
+  if (extraStatusItems) statusItems.push(...extraStatusItems)
+  if (imported) statusItems.push({ key: '⏎', label: 'continue' })
+
   return (
     <Box flexDirection="column" paddingX={1}>
-      {phase === 'input' && (
-        <>
-          <Box marginBottom={1} flexDirection="column">
-            <AsciiTitle />
-            <Text dimColor>  Portfolio rebalancing calculator. Import your</Text>
-            <Text dimColor>  holdings, set targets, and get the exact trades</Text>
-            <Text dimColor>  needed to reach your goals.</Text>
-          </Box>
-        </>
-      )}
+      <Box marginBottom={1} flexDirection="column">
+        <AsciiTitle />
+      </Box>
 
       <Box marginBottom={1}>
         <StepHeader
           step={1}
           totalSteps={4}
           title="Import Portfolio"
-          description="Load your portfolio from a CSV file. Supports Schwab exports and universal CSV format. Or pick a demo portfolio to explore."
+          description=""
         />
       </Box>
 
-      {phase === 'input' && (
-        <>
-          <Box>
-            <Text bold color="green">{"> "}</Text>
-            {inputBuffer
-              ? <Text>{inputBuffer}<Text inverse>{" "}</Text></Text>
-              : <Text dimColor>{isBrowser
-                  ? 'Drag and drop a CSV file, or paste CSV data and press Enter'
-                  : 'Paste or drag a CSV file path, then press Enter'}</Text>}
-          </Box>
-          {error && (
-            <Box marginTop={1}>
-              <Text color="red">Error: {error}</Text>
-            </Box>
-          )}
+      <Box>
+        <Text bold color="green">{"> "}</Text>
+        {inputBuffer
+          ? <Text>{inputBuffer}<Text inverse>{" "}</Text></Text>
+          : <Text dimColor>{isBrowser
+              ? 'Drag and drop a CSV file, or paste CSV data and press Enter'
+              : 'Paste or drag a CSV file path, then press Enter'}</Text>}
+      </Box>
 
-          <Box marginTop={1} flexDirection="column">
-            <Text>Or pick a demo portfolio:</Text>
-            <Box marginTop={1}>
-              <SelectInput
-                items={demoItems}
-                focus={!inputBuffer}
-                onSelect={handleDemoSelect}
-              />
-            </Box>
-          </Box>
-        </>
+      {error && (
+        <Box marginTop={1}>
+          <Text color="red">Error: {error}</Text>
+        </Box>
       )}
 
-      {phase === 'done' && (
-        <>
+      {summary && (
+        <Box marginTop={1} flexDirection="column">
           <Text color="green">{summary}</Text>
           {!isBrowser && <Text dimColor>Saved to {dataDir}/portfolio.csv</Text>}
           {isBrowser && <Text dimColor>Saved to browser storage</Text>}
+        </Box>
+      )}
+
+      {!imported && (
+        <Box marginTop={1} flexDirection="column">
+          <Text>Or pick a demo portfolio:</Text>
           <Box marginTop={1}>
-            <Text dimColor>Press Enter to continue{onReset ? ' · z: reset' : ''}</Text>
+            <SelectInput
+              items={demoItems}
+              focus={!inputBuffer}
+              onSelect={handleDemoSelect}
+            />
           </Box>
-        </>
+        </Box>
+      )}
+
+      {statusItems.length > 0 && (
+        <Box marginTop={1}>
+          <StatusBar items={statusItems} />
+        </Box>
       )}
     </Box>
   )

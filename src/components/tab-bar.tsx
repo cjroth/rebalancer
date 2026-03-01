@@ -4,6 +4,8 @@ import { Box, Text } from 'ink'
 export interface TabBarProps {
   /** Label shown before the options (e.g., "View", "Mode") */
   label?: string
+  /** Fixed width for the label (pads with spaces for alignment) */
+  labelWidth?: number
   /** The options to display */
   options: string[]
   /** Index of the currently selected option */
@@ -16,16 +18,18 @@ export interface TabBarProps {
 
 export function TabBar({
   label,
+  labelWidth,
   options,
   selectedIndex,
   focused = true,
   activeColor = 'cyan',
 }: TabBarProps) {
+  const paddedLabel = label && labelWidth ? label.padEnd(labelWidth) : label
   return (
     <Box>
-      {label && (
+      {paddedLabel && (
         <Text dimColor={!focused} bold={focused}>
-          {label}
+          {paddedLabel}
         </Text>
       )}
       <Text> </Text>

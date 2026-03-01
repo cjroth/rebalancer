@@ -28,6 +28,7 @@ interface AppProps {
   onContinue?: () => void
   onBack?: () => void
   onReset?: () => void
+  extraStatusItems?: { key: string; label: string }[]
 }
 
 type Focus = 'rowDim' | 'colDim' | 'displayMode'
@@ -35,7 +36,7 @@ type Focus = 'rowDim' | 'colDim' | 'displayMode'
 const DISPLAY_MODES = ['$k', '$', '%', 'Both'] as const
 export type DisplayMode = typeof DISPLAY_MODES[number]
 
-export function App({ symbols, accounts, holdings, onQuit, onContinue, onBack, onReset }: AppProps) {
+export function App({ symbols, accounts, holdings, onQuit, onContinue, onBack, onReset, extraStatusItems }: AppProps) {
   const { exit } = useApp()
   const [rowDimIndex, setRowDimIndex] = useState(0)
   const [colDimIndex, setColDimIndex] = useState(0)
@@ -76,9 +77,15 @@ export function App({ symbols, accounts, holdings, onQuit, onContinue, onBack, o
       return
     }
 
-    if (key.tab) {
+    if (key.tab || key.downArrow) {
       const order: Focus[] = ['rowDim', 'colDim', 'displayMode']
       setFocus(f => order[(order.indexOf(f) + 1) % order.length]!)
+      return
+    }
+
+    if (key.upArrow) {
+      const order: Focus[] = ['rowDim', 'colDim', 'displayMode']
+      setFocus(f => order[(order.indexOf(f) - 1 + order.length) % order.length]!)
       return
     }
 
@@ -106,6 +113,7 @@ export function App({ symbols, accounts, holdings, onQuit, onContinue, onBack, o
           {cursor('rowDim')}
           <DimSelector
             label="Row"
+            labelWidth={4}
             options={ROW_DIMS.map(d => d.label)}
             selectedIndex={rowDimIndex}
             focused={focus === 'rowDim'}
@@ -115,6 +123,7 @@ export function App({ symbols, accounts, holdings, onQuit, onContinue, onBack, o
           {cursor('colDim')}
           <DimSelector
             label="Col"
+            labelWidth={4}
             options={COL_DIMS.map(d => d.label)}
             selectedIndex={colDimIndex}
             focused={focus === 'colDim'}
@@ -123,7 +132,8 @@ export function App({ symbols, accounts, holdings, onQuit, onContinue, onBack, o
         <Box>
           {cursor('displayMode')}
           <DimSelector
-            label="Show"
+            label="Cell"
+            labelWidth={4}
             options={[...DISPLAY_MODES]}
             selectedIndex={displayModeIndex}
             focused={focus === 'displayMode'}
@@ -137,7 +147,7 @@ export function App({ symbols, accounts, holdings, onQuit, onContinue, onBack, o
       </Box>
 
       {/* Status bar */}
-      <StatusBar grandTotal={grandTotal} showContinue={!!onContinue} showBack={!!onBack} showReset={!!onReset} />
+      <StatusBar grandTotal={grandTotal} showContinue={!!onContinue} showBack={!!onBack} showReset={!!onReset} extraItems={extraStatusItems} />
     </Box>
   )
 }

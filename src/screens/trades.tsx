@@ -26,6 +26,7 @@ interface Step4Props {
   onReset?: () => void
   portfolioInput?: RebalanceInput | null
   portfolioData?: { symbols: Symbol[]; accounts: Account[]; holdings: Holding[] } | null
+  extraStatusItems?: StatusBarItem[]
 }
 
 const STRATEGIES = ['Minimize Trades', 'Consolidate'] as const
@@ -37,7 +38,7 @@ function formatUSD(amount: number): string {
   return '$' + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, portfolioInput: preloadedInput, portfolioData: preloadedData }: Step4Props) {
+export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, portfolioInput: preloadedInput, portfolioData: preloadedData, extraStatusItems }: Step4Props) {
   const { exit: _exit } = useApp()
 
   const adapter = storage!
@@ -60,15 +61,14 @@ export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, por
   const [viewIndex, setViewIndex] = useState(0)
   const [focus, setFocus] = useState<Focus>('strategy')
 
-  if (!loadedData || !loadedInput) {
-    return <Box paddingX={1}><Text dimColor>Loading...</Text></Box>
-  }
-
-  const { symbols, accounts, holdings } = loadedData
+  const symbols = loadedData?.symbols
+  const accounts = loadedData?.accounts
+  const holdings = loadedData?.holdings
 
   const strategy = strategyIndex === 0 ? 'min_trades' : 'consolidate' as const
 
   const { trades, rebalancedHoldings } = useMemo(() => {
+    if (!symbols || !accounts || !holdings) return { trades: [], rebalancedHoldings: [] as Holding[] }
     const rebalanceFn = strategy === 'min_trades' ? calculateRebalanceMinTrades : calculateRebalance
     const rebalancedHoldings = convertToWholeShares(
       rebalanceFn(symbols, accounts, holdings)
@@ -85,7 +85,7 @@ export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, por
     }
   }, [trades, adapter])
 
-  const totalValue = holdings.reduce((sum, h) => sum + h.amount, 0)
+  const totalValue = holdings?.reduce((sum, h) => sum + h.amount, 0) ?? 0
 
   // Sort: sells first, then buys, by amount descending
   const sorted = useMemo(() => {
@@ -105,6 +105,7 @@ export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, por
 
   // Final balances view: synthetic holdings with target amounts
   const finalBalancesData = useMemo(() => {
+    if (!symbols || !accounts) return { tableData: { rows: [], cols: [], cells: new Map() }, grandTotal: 0 }
     const syntheticHoldings: Holding[] = rebalancedHoldings.map(h => ({
       ...h,
       amount: h.targetAmount ?? h.amount,
@@ -116,7 +117,11 @@ export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, por
   }, [rebalancedHoldings, symbols, accounts])
 
   useInput((input, key) => {
-    if (key.tab) {
+    if (key.tab || key.downArrow) {
+      setFocus(f => f === 'strategy' ? 'view' : 'strategy')
+      return
+    }
+    if (key.upArrow) {
       setFocus(f => f === 'strategy' ? 'view' : 'strategy')
       return
     }
@@ -142,6 +147,10 @@ export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, por
     }
   })
 
+  if (!loadedData || !loadedInput) {
+    return <Box paddingX={1}><Text dimColor>Loading...</Text></Box>
+  }
+
   return (
     <Box flexDirection="column" paddingX={1}>
       <Box marginBottom={1}>
@@ -149,23 +158,31 @@ export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, por
           step={4}
           totalSteps={4}
           title="Review Trades"
-          description="Review the calculated trades to reach your target allocations. Switch between strategies and views to analyze the rebalancing plan."
+          description=""
         />
       </Box>
 
       <Box flexDirection="column" marginBottom={1}>
-        <DimSelector
-          label="Strategy"
-          options={[...STRATEGIES]}
-          selectedIndex={strategyIndex}
-          focused={focus === 'strategy'}
-        />
-        <DimSelector
-          label="View"
-          options={[...VIEWS]}
-          selectedIndex={viewIndex}
-          focused={focus === 'view'}
-        />
+        <Box>
+          <Text color="cyan">{focus === 'strategy' ? ' ▸ ' : '   '}</Text>
+          <DimSelector
+            label="Strategy"
+            labelWidth={8}
+            options={[...STRATEGIES]}
+            selectedIndex={strategyIndex}
+            focused={focus === 'strategy'}
+          />
+        </Box>
+        <Box>
+          <Text color="cyan">{focus === 'view' ? ' ▸ ' : '   '}</Text>
+          <DimSelector
+            label="View"
+            labelWidth={8}
+            options={[...VIEWS]}
+            selectedIndex={viewIndex}
+            focused={focus === 'view'}
+          />
+        </Box>
       </Box>
 
       {viewIndex === 0 ? (
@@ -217,11 +234,11 @@ export function Step4Trades({ dataDir, storage, onComplete, onBack, onReset, por
       <Box marginTop={1}>
         <StatusBar
           items={[
-            { key: '⏎/q', label: 'exit' },
-            { key: 'Tab', label: 'switch focus' },
-            { key: '←→', label: 'cycle' },
+            { key: '↑↓←→', label: 'navigate' },
             ...(onBack ? [{ key: 'b', label: 'back' }] : []),
             ...(onReset ? [{ key: 'z', label: 'reset' }] : []),
+            ...(extraStatusItems ?? []),
+            { key: '⏎/q', label: 'exit' },
           ] as StatusBarItem[]}
         />
       </Box>

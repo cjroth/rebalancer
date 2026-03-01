@@ -27,6 +27,7 @@ interface Step3Props {
   portfolioInput?: RebalanceInput | null
   portfolioData?: { symbols: Symbol[]; accounts: Account[]; holdings: Holding[] } | null
   onPortfolioImported?: (input: RebalanceInput, data: { symbols: Symbol[]; accounts: Account[]; holdings: Holding[] }) => void
+  extraStatusItems?: StatusBarItem[]
 }
 
 interface TargetRow {
@@ -37,7 +38,7 @@ interface TargetRow {
   targetPercent: number
 }
 
-export function Step3Targets({ dataDir: _dataDir, storage, onComplete, onBack, onReset, portfolioInput: preloadedInput, portfolioData: preloadedData, onPortfolioImported }: Step3Props) {
+export function Step3Targets({ dataDir: _dataDir, storage, onComplete, onBack, onReset, portfolioInput: preloadedInput, portfolioData: preloadedData, onPortfolioImported, extraStatusItems }: Step3Props) {
   const { exit } = useApp()
 
   const adapter = storage!
@@ -54,11 +55,8 @@ export function Step3Targets({ dataDir: _dataDir, storage, onComplete, onBack, o
     }
   }, [])
 
-  if (!loadedData || !loadedInput) {
-    return <Box paddingX={1}><Text dimColor>Loading...</Text></Box>
-  }
-
-  const { symbols, holdings } = loadedData
+  const symbols = loadedData?.symbols ?? []
+  const holdings = loadedData?.holdings ?? []
   const portfolioInput = loadedInput
 
   const totalValue = useMemo(
@@ -94,7 +92,7 @@ export function Step3Targets({ dataDir: _dataDir, storage, onComplete, onBack, o
     })).sort((a, b) => b.currentPercent - a.currentPercent)
   )
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [editBuffer, setEditBuffer] = useState(() => String(rows[0]!.targetPercent))
+  const [editBuffer, setEditBuffer] = useState(() => rows[0] ? String(rows[0].targetPercent) : '0')
   const [freshSelection, setFreshSelection] = useState(true) // first keystroke replaces buffer
 
   const targetSum = useMemo(
@@ -102,6 +100,25 @@ export function Step3Targets({ dataDir: _dataDir, storage, onComplete, onBack, o
     [rows]
   )
   const isValid = Math.abs(targetSum - 100) < 0.02
+
+  // Populate rows once data finishes loading (useState initializer only runs once with empty data)
+  useEffect(() => {
+    if (loadedData && rows.length === 0 && symbols.length > 0) {
+      const newRows = symbols.map(s => ({
+        symbol: s.name,
+        shares: symbolAgg[s.name]?.shares || 0,
+        price: s.price,
+        currentPercent: symbolAgg[s.name]?.percent || 0,
+        targetPercent: s.targetPercent || 0,
+      })).sort((a, b) => b.currentPercent - a.currentPercent)
+      setRows(newRows)
+      setEditBuffer(newRows[0] ? String(newRows[0].targetPercent) : '0')
+      setSelectedIndex(0)
+      setFreshSelection(true)
+    }
+  }, [loadedData])
+
+  const isLoading = !loadedData || !loadedInput
 
   const updateRow = (index: number, targetPercent: number) => {
     setRows(prev => prev.map((r, i) => i === index ? { ...r, targetPercent } : r))
@@ -124,6 +141,8 @@ export function Step3Targets({ dataDir: _dataDir, storage, onComplete, onBack, o
   }
 
   useInput((input, key) => {
+    if (isLoading) return
+
     if (key.escape) {
       exit()
       return
@@ -163,7 +182,7 @@ export function Step3Targets({ dataDir: _dataDir, storage, onComplete, onBack, o
           delete targets[sym]
         }
       }
-      const updated = { ...portfolioInput, targets }
+      const updated = { ...portfolioInput!, targets }
       savePortfolioAsync(adapter, updated)
       const syms = buildSymbols(updated)
       onPortfolioImported?.(updated, {
@@ -224,6 +243,10 @@ export function Step3Targets({ dataDir: _dataDir, storage, onComplete, onBack, o
     }
   })
 
+  if (isLoading) {
+    return <Box paddingX={1}><Text dimColor>Loading...</Text></Box>
+  }
+
   return (
     <Box flexDirection="column" paddingX={1}>
       <Box marginBottom={1}>
@@ -231,7 +254,7 @@ export function Step3Targets({ dataDir: _dataDir, storage, onComplete, onBack, o
           step={3}
           totalSteps={4}
           title="Set Target Allocations"
-          description="Set your desired allocation percentage for each holding. Targets must sum to 100%. Use shortcuts to speed up entry."
+          description=""
         />
       </Box>
 
@@ -293,10 +316,12 @@ export function Step3Targets({ dataDir: _dataDir, storage, onComplete, onBack, o
             { key: 'a', label: 'all to current' },
             ...(onBack ? [{ key: 'b', label: 'back' }] : []),
             ...(onReset ? [{ key: 'z', label: 'reset' }] : []),
+            ...(extraStatusItems ?? []),
+            ...(isValid ? [{ key: '⏎', label: 'continue' }] : []),
           ] as StatusBarItem[]}
         />
         {isValid && (
-          <Text color="green" bold>Targets sum to 100%. Press Enter to continue.</Text>
+          <Text color="green" bold>Targets sum to 100%.</Text>
         )}
         {!isValid && targetSum > 0 && (
           <Text color="yellow">Targets must sum to 100% (currently {targetSum.toFixed(2)}%)</Text>

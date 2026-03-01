@@ -30,7 +30,7 @@ export function StepHeader({ step, totalSteps, title, description }: StepHeaderP
   const topAfter = '─'.repeat(INNER_WIDTH - stepLabel.length - 1)
   const bottom = '─'.repeat(INNER_WIDTH)
   const pad = ' '.repeat(INNER_WIDTH)
-  const descLines = wrapText(description, INNER_WIDTH - 4)
+  const descLines = description ? wrapText(description, INNER_WIDTH - 4) : []
 
   return (
     <Box flexDirection="column">

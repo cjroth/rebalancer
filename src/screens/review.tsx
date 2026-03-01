@@ -14,9 +14,10 @@ interface Step2Props {
   onReset?: () => void
   portfolioInput?: RebalanceInput | null
   portfolioData?: { symbols: Symbol[]; accounts: Account[]; holdings: Holding[] } | null
+  extraStatusItems?: { key: string; label: string }[]
 }
 
-export function Step2Review({ dataDir: _dataDir, storage, onComplete, onBack, onReset, portfolioData: preloaded }: Step2Props) {
+export function Step2Review({ dataDir: _dataDir, storage, onComplete, onBack, onReset, portfolioData: preloaded, extraStatusItems }: Step2Props) {
   const { exit } = useApp()
 
   const adapter = storage!
@@ -41,8 +42,8 @@ export function Step2Review({ dataDir: _dataDir, storage, onComplete, onBack, on
         <StepHeader
           step={2}
           totalSteps={4}
-          title="Review Portfolio"
-          description="Explore your portfolio across different dimensions. Use Tab and arrows to switch between rows, columns, and display modes."
+          title="Review Current Positions"
+          description=""
         />
       </Box>
       <App
@@ -53,6 +54,7 @@ export function Step2Review({ dataDir: _dataDir, storage, onComplete, onBack, on
         onBack={onBack}
         onQuit={() => exit()}
         onReset={onReset}
+        extraStatusItems={extraStatusItems}
       />
     </Box>
   )
