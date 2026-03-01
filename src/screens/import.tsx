@@ -78,7 +78,7 @@ export function Step1Import({ dataDir, storage, onComplete, onBack: _onBack, onR
   const [summary, setSummary] = useState('')
   const [imported, setImported] = useState(false)
 
-  const isBrowser = !!storage
+  const isBrowser = !readFile
 
   const adapter = storage!
 
