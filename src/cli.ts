@@ -38,7 +38,13 @@ async function main() {
       break
     default: {
       const state = await readWizardStateAsync(storage)
-      render(React.createElement(Wizard, { dataDir, storage, readFile, initialStep: state.currentStep }))
+      const chatEnabled = !!process.env.ANTHROPIC_API_KEY
+      if (chatEnabled) {
+        const { ChatModalWizard } = await import('./chat/ChatModalWizard.tsx')
+        render(React.createElement(ChatModalWizard, { dataDir, storage, readFile, initialStep: state.currentStep }))
+      } else {
+        render(React.createElement(Wizard, { dataDir, storage, readFile, initialStep: state.currentStep }))
+      }
       break
     }
   }
