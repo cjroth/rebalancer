@@ -4,7 +4,7 @@ import { Box, Text } from 'ink'
 import { InkXterm, useFileDrop } from 'ink-web'
 import { CornerRibbon } from '../components/made-with-ink-web'
 import type { DroppedFile } from 'ink-web'
-import 'xterm/css/xterm.css'
+import '@xterm/xterm/css/xterm.css'
 
 import Yoga from 'yoga-layout'
 ;(globalThis as any).__yogaPromise = Promise.resolve(Yoga)
