@@ -1,7 +1,7 @@
 import { describe, expect, test, afterEach } from 'bun:test'
 import React, { useState } from 'react'
-import { renderTui, cleanup, type TuiInstance } from '../../src/test-utils/index.ts'
-import { TextInput } from '../../src/components/text-input.tsx'
+import { renderTui, cleanup, type TuiInstance } from '../test-utils/index.ts'
+import { TextInput } from './text-input.tsx'
 
 afterEach(() => {
   cleanup()

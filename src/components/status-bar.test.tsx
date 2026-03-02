@@ -1,8 +1,8 @@
 import { describe, expect, test, afterEach } from 'bun:test'
 import React from 'react'
 import { Text } from 'ink'
-import { renderTui, cleanup } from '../../src/test-utils/index.ts'
-import { StatusBar } from '../../src/components/status-bar.tsx'
+import { renderTui, cleanup } from '../test-utils/index.ts'
+import { StatusBar } from './status-bar.tsx'
 
 afterEach(() => {
   cleanup()

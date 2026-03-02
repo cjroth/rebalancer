@@ -1,7 +1,7 @@
 import { describe, expect, test, afterEach } from 'bun:test'
 import React from 'react'
-import { renderTui, cleanup, InMemoryStorage } from '../../src/test-utils/index.ts'
-import { Wizard } from '../../src/screens/wizard.tsx'
+import { renderTui, cleanup, InMemoryStorage } from '../test-utils/index.ts'
+import { Wizard } from './wizard.tsx'
 
 afterEach(() => {
   cleanup()

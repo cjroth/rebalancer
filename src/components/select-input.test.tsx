@@ -1,8 +1,8 @@
 import { describe, expect, test, afterEach } from 'bun:test'
 import React from 'react'
-import { renderTui, cleanup } from '../../src/test-utils/index.ts'
-import { SelectInput } from '../../src/components/select-input.tsx'
-import type { SelectInputItem } from '../../src/components/select-input.tsx'
+import { renderTui, cleanup } from '../test-utils/index.ts'
+import { SelectInput } from './select-input.tsx'
+import type { SelectInputItem } from './select-input.tsx'
 
 afterEach(() => {
   cleanup()

@@ -1,7 +1,7 @@
 import { describe, expect, test, afterEach } from 'bun:test'
 import React from 'react'
-import { renderTui, cleanup } from '../../src/test-utils/index.ts'
-import { TabBar } from '../../src/components/tab-bar.tsx'
+import { renderTui, cleanup } from '../test-utils/index.ts'
+import { TabBar } from './tab-bar.tsx'
 
 afterEach(() => {
   cleanup()

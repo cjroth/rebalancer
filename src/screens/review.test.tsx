@@ -1,7 +1,7 @@
 import { describe, expect, test, afterEach } from 'bun:test'
 import React from 'react'
-import { renderTui, cleanup, InMemoryStorage, buildDemoData } from '../../src/test-utils/index.ts'
-import { Step2Review } from '../../src/screens/review.tsx'
+import { renderTui, cleanup, InMemoryStorage, buildDemoData } from '../test-utils/index.ts'
+import { Step2Review } from './review.tsx'
 
 afterEach(() => {
   cleanup()

@@ -1,8 +1,8 @@
 import { describe, expect, test, afterEach } from 'bun:test'
 import React from 'react'
-import { renderTui, cleanup } from '../../src/test-utils/index.ts'
-import { Table } from '../../src/components/table.tsx'
-import type { Column, Cell } from '../../src/components/table.tsx'
+import { renderTui, cleanup } from '../test-utils/index.ts'
+import { Table } from './table.tsx'
+import type { Column, Cell } from './table.tsx'
 
 afterEach(() => {
   cleanup()
